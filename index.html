@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+  <title>Земли Рассвета — мини MMO</title>
+  <link rel="stylesheet" href="style.css">
+  <script type="importmap">
+    { "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.186.0/build/three.module.js" } }
+  </script>
+</head>
+<body>
+  <div id="game"></div>
+  <div id="labels"></div>
+
+  <div id="hud" class="hidden">
+    <!-- Игрок -->
+    <div id="player-frame" class="panel">
+      <div class="pf-top"><span id="pf-name">Герой</span><span id="pf-lvl" class="lvl">1</span></div>
+      <div class="bar hp"><i id="hp-fill"></i><span id="hp-text"></span></div>
+      <div class="bar mp"><i id="mp-fill"></i><span id="mp-text"></span></div>
+      <div class="bar xp"><i id="xp-fill"></i><span id="xp-text"></span></div>
+      <div class="pf-gold">🪙 <span id="gold">0</span> &nbsp; 🧪 <span id="potions">0</span></div>
+    </div>
+    <!-- Цель -->
+    <div id="target-frame" class="panel hidden">
+      <div class="pf-top"><span id="t-name"></span><span id="t-lvl" class="lvl"></span></div>
+      <div class="bar hp"><i id="t-fill"></i><span id="t-text"></span></div>
+    </div>
+    <!-- Босс -->
+    <div id="bossbar" class="hidden">
+      <div id="boss-name"></div>
+      <div class="bar boss"><i id="boss-fill"></i><span id="boss-text"></span></div>
+    </div>
+    <div id="zone-banner"></div>
+    <div id="toast"></div>
+
+    <!-- Миникарта -->
+    <div id="map-wrap">
+      <canvas id="minimap" width="180" height="180"></canvas>
+      <div id="online">⚪ подключение…</div>
+    </div>
+
+    <!-- Скиллы -->
+    <div id="skills">
+      <div class="skill" data-skill="whirl" title="Вихрь — урон всем вокруг (20 маны)"><span class="ic">🌀</span><span class="key">1</span><i class="cd"></i></div>
+      <div class="skill" data-skill="heal" title="Исцеление — +40% здоровья (30 маны)"><span class="ic">💚</span><span class="key">2</span><i class="cd"></i></div>
+      <div class="skill" data-skill="dash" title="Рывок (Shift)"><span class="ic">💨</span><span class="key">3</span><i class="cd"></i></div>
+      <div class="skill" data-skill="potion" title="Зелье — +50% здоровья (R)"><span class="ic">🧪</span><span class="key">4</span><span class="count" id="potion-count">0</span><i class="cd"></i></div>
+      <div class="skill small" id="btn-inv" title="Инвентарь (I)"><span class="ic">🎒</span><span class="key">I</span></div>
+    </div>
+
+    <!-- Чат -->
+    <div id="chat">
+      <div id="chat-log"></div>
+      <input id="chat-input" maxlength="160" placeholder="Enter — написать в чат" autocomplete="off">
+    </div>
+
+    <div id="help" class="panel">
+      <b>Управление</b><br>
+      ЛКМ — идти / атаковать<br>
+      WASD — ходить, Пробел — ближайший враг<br>
+      1–4 — умения, Shift — рывок, R — зелье<br>
+      I — инвентарь, Enter — чат, колесо — зум<br>
+      <span class="dim">H — скрыть подсказку</span>
+    </div>
+
+    <!-- Инвентарь -->
+    <div id="inventory" class="panel hidden">
+      <div class="panel-title">Снаряжение <span class="close" data-close="inventory">✕</span></div>
+      <div id="equip"></div>
+      <div id="stats"></div>
+      <div class="panel-title small">Сумка <span id="inv-count" class="dim"></span></div>
+      <div id="inv-grid"></div>
+      <div id="inv-hint" class="dim">Клик — надеть · Shift+клик — выбросить</div>
+    </div>
+
+    <!-- Магазин -->
+    <div id="shop" class="panel hidden">
+      <div class="panel-title">Торговец Борис <span class="close" data-close="shop">✕</span></div>
+      <p class="dim">«Заходи, путник! Зелья свежие, цены честные.»</p>
+      <button id="buy-1">Купить зелье — 25 🪙</button>
+      <button id="buy-5">Купить 5 зелий — 110 🪙</button>
+      <button id="sell-junk">Продать обычные и необычные</button>
+      <p class="dim">Клик по предмету в сумке — продать его.</p>
+    </div>
+  </div>
+
+  <div id="tooltip" class="hidden"></div>
+
+  <div id="death" class="overlay hidden">
+    <div class="card">
+      <h2>Вы погибли</h2>
+      <p class="dim">Вы потеряете 10% золота.</p>
+      <button id="respawn-btn">Возродиться в городе</button>
+    </div>
+  </div>
+
+  <div id="start" class="overlay">
+    <div class="card">
+      <h1>Земли Рассвета</h1>
+      <p class="dim">Мини-MMO на three.js · сражайся с монстрами, собирай лут, побеждай боссов вместе с другими игроками</p>
+      <input id="name-input" maxlength="16" placeholder="Имя героя">
+      <button id="play-btn">Играть</button>
+      <p class="small dim">Прогресс сохраняется в браузере. Другие игроки подключаются напрямую (P2P).</p>
+    </div>
+  </div>
+
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>
