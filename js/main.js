@@ -30,7 +30,11 @@ renderer.toneMapping = THREE.ACESFilmicToneMapping;
 $('game').appendChild(renderer.domElement);
 
 const scene = new THREE.Scene();
-scene.background = new THREE.Color(0x14201a);
+renderer.setClearColor(0x14201a);
+renderer.autoClear = false;
+renderer.shadowMap.autoUpdate = false;
+// Слои: 0 — мир, 1 — игроки, 2 — силуэты игроков (видны только за препятствиями)
+const L_WORLD = 0, L_HERO = 1, L_SIL = 2;
 const VIEW = 24;
 const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 1, 400);
 const CAM_OFF = new THREE.Vector3(40, 46, 40);
@@ -42,9 +46,10 @@ function resize() {
 }
 addEventListener('resize', resize); resize();
 
-scene.add(new THREE.HemisphereLight(0xcfe3ff, 0x40502f, 1.2));
+const hemi = new THREE.HemisphereLight(0xcfe3ff, 0x40502f, 1.2);
+hemi.layers.enableAll(); scene.add(hemi);
 const sun = new THREE.DirectionalLight(0xfff0d8, 2.6);
-sun.castShadow = true;
+sun.castShadow = true; sun.layers.enableAll(); sun.shadow.camera.layers.enable(L_HERO);
 sun.shadow.mapSize.set(2048, 2048);
 Object.assign(sun.shadow.camera, { left: -38, right: 38, top: 38, bottom: -38, near: 1, far: 140 });
 sun.shadow.camera.updateProjectionMatrix();
@@ -567,10 +572,14 @@ const player = {
 const pRoot = new THREE.Group(), pModel = M.buildHero(0x3b6fd6);
 pRoot.add(pModel); scene.add(pRoot);
 // силуэт сквозь деревья и дома
+// Силуэт рисуется отдельным проходом только против глубины мира, поэтому
+// части самого персонажа (руки за телом и т.п.) его не вызывают.
 function addSilhouette(model, color) {
-  const sil = new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.45, depthWrite: false, depthFunc: THREE.GreaterDepth });
-  const meshes = []; model.traverse(c => { if (c.isMesh) meshes.push(c); });
-  for (const c of meshes) { const s = new THREE.Mesh(c.geometry, sil); s.renderOrder = 5; s.castShadow = false; c.add(s); }
+  const sil = new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.4, depthWrite: false, depthFunc: THREE.GreaterDepth });
+  const meshes = []; model.traverse(c => { if (c.isMesh) meshes.push(c); c.layers.set(L_HERO); });
+  for (const c of meshes) {
+    const s = new THREE.Mesh(c.geometry, sil); s.castShadow = false; s.layers.set(L_SIL); c.add(s);
+  }
 }
 addSilhouette(pModel, 0x7fc4ff);
 player.pos = pRoot.position; player.pos.set(2.5, 0, 3.5);
@@ -1190,12 +1199,16 @@ function tick(dt) {
   camera.lookAt(camFocus.x, 0, camFocus.z);
   sun.position.copy(camFocus).add(SUN_OFF); sun.target.position.copy(camFocus);
 
-  renderer.render(scene, camera);
+  renderer.clear();
+  renderer.shadowMap.needsUpdate = true;
+  camera.layers.set(L_WORLD); renderer.render(scene, camera);
+  camera.layers.set(L_SIL); renderer.render(scene, camera);
+  camera.layers.set(L_HERO); renderer.render(scene, camera);
   updateFloats(dt); updateLabels(dt);
   if (started) {
     updateHUD(dt); drawMinimap(dt); netTick(dt);
     if ((hoverTimer -= dt) <= 0) { hoverTimer = 0.08; canvas.style.cursor = pickMob() ? 'crosshair' : pickMerchant() ? 'pointer' : 'default'; }
   }
 }
-window.game = { player, mobs, bosses, others, recalc, step: (sec = 1) => { for (let i = 0; i < sec * 30; i++) tick(1 / 30); } }; // для отладки из консоли
+window.game = { player, mobs, bosses, others, recalc, scene, camera, step: (sec = 1) => { for (let i = 0; i < sec * 30; i++) tick(1 / 30); } }; // для отладки из консоли
 frame();
